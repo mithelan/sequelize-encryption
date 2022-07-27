@@ -61,7 +61,7 @@ exports.encryptData = (data,key) => {
 };
 
 exports.decryptData = (data, key) => {
-  const decrypt = crypto.createDecipheriv('aes-128-ecb', convertCryptKey(key), '')
+  const decrypt = crypto.createDecipheriv('aes-128-ecb', cryptoBuffer(key), '')
   let decryptedData = ''
   decryptedData += decrypt.update(data, 'hex', 'utf8')
   decryptedData += decrypt.final('utf8')

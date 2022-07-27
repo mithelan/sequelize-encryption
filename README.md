@@ -19,69 +19,137 @@ npm i sequelize-encryption
 yarn add sequelize-encryption
 ```
 
+
+## Generate a encryption key
+
+openssl rand -hex 16
+sample-> `3c7a4eb821c141726cebd608862da861`
+## Available methods
+
+  1. castQuery - `CAST(AES_DECRYPT(UNHEX(tableFieldName}),'${encryptionKey}') AS CHAR(50))`
+  2. customQuery - `SELECT [tableFields],CAST(AES_DECRYPT(UNHEX(tableFieldName), encryptionKey) AS CHAR(50)) aliasName FROM tableName`
+  3. encryptData - `SELECT HEX(AES_ENCRYPT(str, encryptionKey))`
+  4. decryptData - `SELECT CAST(AES_DECRYPT(UNHEX(encrypted), encryptionKey) as CHAR)`
+
 ## Usage
 
 ```sh
 
-Currently there are 2 ways added.
+   const { castQuery , customQuery , encryptData, decryptData } = require('sequelize-encryption');
 
- 1. castQuery
-    It is more useful when you findall a model and you need to get a encrypted field changed into decrypted field.
 
-    Ex : 
-    `let persons = await this.personModel.findAll(query);`
+   1. `castQuery(tableField, encryptionKey);`
 
-    `let query= attributes: userAttributes();,`
+     |   column        |      type     | 
+     |-----------------|---------------|
+     |  `tableField `  |    `String`   |
+     | `encryptionKey` |    `String`   |
 
-    const user = const userAttributes = () => {
-        return {
-          include: [
-            [
-              this.database.literal(
-                `CAST(AES_DECRYPT(UNHEX(firstName),${encryption}) AS CHAR(50))`
-              ),
-              'firstName',
-            ],
-          ],
-        };
-      };
+   2. `customQuery( names = [],castName = "",encryption = "",aliasName = "",tableName = "");`
 
-      instred of using `CAST(AES_DECRYPT(UNHEX(firstName),${encryption}) AS CHAR(50))`
-      now we can use,
-      `Dec.castQuery(data, encryption)`
+     |   column        |      type     | 
+     |-----------------|---------------|
+     |  `names `       |    `Array`    |
+     | `castName`      |    `String`   |
+     |  `encryption `  |    `Array`    |
+     | `aliasName`     |    `String`   |
+     | `tableName`     |    `String`   |
 
+   3. `encryptData(tableField,encryptionKey);`
+
+     |   column        |      type     | 
+     |-----------------|---------------|
+     |  `data `        |    `String`   |
+     | `encryptionKey` |    `String`   |
+
+  
+  4. `decryptData(encryptedValue,encryptionKey);`
+   
+     | column            |      type     | 
+     |-----------------  |---------------|
+     |  `encryptedValue `|    `String`   |
+     | `encryptionKey`   |    `String`   |
 
 ```
 
 ## Examples
 
 ```sh
-      const { Dec } = require('sequelize-encryption');
 
-      const user = const userAttributes = () => {
-        return {
-          include: [
+  Currently there are 4 ways added.
+
+1. castQuery
+    It is more useful when you findall a model and you need to get a encrypted field changed into decrypted field.
+
+    Ex : 
+    `let persons = await this.personModel.findAll(query);`
+
+    `let query= {
+      attributes:{
+        include: [
             [
-              this.database.literal(
-                Dec.castQuery(data, encryption)
+              sequelize.literal(
+                `CAST(AES_DECRYPT(UNHEX(firstName),${encryptionKey}) AS CHAR(50))`
               ),
-              'firstName',
+              'decryptedFirstName',
             ],
-          ],
-        };
-      };
+          ]
+      }}`
 
-      `Dec.castQuery(data, encryption)` accepts 2 parameter.
+      Instred of using `CAST(AES_DECRYPT(UNHEX(firstName),${encryption}) AS CHAR(50))`
+      now we can use,
 
-      data- table field
-      encryption - str - that you used to encrypt the fields
+       `let query= {
+      attributes:{
+        include: [
+            [
+              sequelize.literal(
+                castQuery(${data}, ${encryption})
+              ),
+              'decryptedFirstName',
+            ],
+          ]
+      }}`
 
+
+ 2. Custom Query
+
+    Actual Query -> 
+
+    `SELECT id,field2,field3,CAST(AES_DECRYPT(field2, '098a4ad28mde3c4435009c9613749222') AS CHAR(50)) decrypedField FROM     personTable`;`
+
+    Fields can be sent as an array.
+
+    With Sequelize-encryption ->
+
+   `SELECT ${names.join(",")},CAST(AES_DECRYPT(${castName}, '${encryption}') AS CHAR(50)) ${aliasName} FROM ${tableName}`;`
 
 ```
+  3. Encrypt Query & Decrypt Query
+
+      You can decrypt and encrypt as same as mysql native functions AES_ENCRYPT and AES_DECRYPT.
+      In this module,we are using the same method used to encrypt and decrypt as mysql.
+
+      const { encryptData } = require('sequelize-encryption');
+      
+      let firstName=encryptData(data,encryptionKey);
+
+     |   column        |      type     | 
+     |-----------------|---------------|
+     |  `data `        |    `String`   |
+     | `encryptionKey` |    `String`   |
+    
+
+|TYPE|Code|Mysql Query|
+|---|---|---|
+| `String` | `encryptData(str, encryptionKey)`        | `SELECT HEX(AES_ENCRYPT(str, encryptionKey))` |
+| `String` | `decryptData(encryptedField, encryptionKey)`  | `SELECT CAST(AES_DECRYPT(UNHEX(encrypted), encryptionKey) as CHAR)`
+```
+   ```
 ## Run tests
 
 ```sh
-''
+npm test
 ```
 
 ## Author
